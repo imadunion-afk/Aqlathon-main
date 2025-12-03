@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archived Submissions - Aqlathon</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            /* Colors extracted from the image */
+            --bg-dark: #0d1117;
+            --card-bg: #131b24; /* Dark blue-ish grey */
+            --text-main: #ffffff;
+            --text-muted: #8b949e;
+            --accent-cyan: #00f0ff; /* Bright Neon Cyan */
+            --accent-pink: #ff0055; /* Hot Pink */
+            --border-color: rgba(48, 54, 61, 0.5);
+            --table-header-bg: rgba(0,0,0,0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+
+        body { 
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.05) 0%, transparent 50%);
+            color: var(--text-main); 
+            min-height: 100vh; 
+            padding: 40px 20px;
+        }
+
+        /* NAVBAR / HEADER */
+        .navbar {
+            max-width: 1000px; 
+            margin: 0 auto 30px auto; 
+            background: var(--card-bg);
+            padding: 15px 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            border: 1px solid var(--border-color); 
+            display: flex; 
+            justify-content: space-between;
+            align-items: center; 
+        }
+
+        .navbar h1 { 
+            font-size: 1.1rem; 
+            font-weight: 700; 
+            color: var(--accent-cyan); 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+        }
+
+        .back-btn {
+            background: var(--accent-pink); 
+            color: white; 
+            border: none;
+            padding: 10px 24px; 
+            border-radius: 50px; 
+            text-decoration: none; 
+            font-size: 0.85rem; 
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3);
+            transition: all 0.3s;
+        }
+        .back-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 0, 85, 0.5);
+        }
+
+        /* MAIN CARD */
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        .dashboard-card {
+            background: var(--card-bg); 
+            border-radius: 16px; 
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color); 
+            overflow: hidden; 
+            padding: 20px;
+        }
+
+        .card-header-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .record-count {
+            font-size: 0.8rem;
+            background: rgba(255,255,255,0.1);
+            padding: 2px 8px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        /* TABLE STYLING */
+        .table-wrapper { overflow-x: auto; }
+        
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+
+        th { 
+            background-color: var(--bg-dark); 
+            color: var(--accent-cyan); 
+            padding: 1.2rem; 
+            font-size: 0.75rem; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td { 
+            padding: 1.2rem; 
+            border-bottom: 1px solid var(--border-color); 
+            font-size: 0.9rem; 
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: rgba(255,255,255,0.02); }
+
+        /* STATUS BADGES (Pill Shape) */
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: capitalize;
+        }
+
+        .status-archived {
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        /* ACTIONS (Icons) */
+        .action-flex {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+        }
+
+        .icon-btn:hover { transform: scale(1.2); }
+
+        /* Restore Icon (Check) */
+        .btn-restore { color: var(--text-muted); }
+        .btn-restore:hover { color: var(--accent-cyan); }
+        
+        /* Delete Icon (Trash) */
+        .btn-delete { color: var(--text-muted); }
+        .btn-delete:hover { color: var(--accent-pink); }
+
+        .empty-state { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <h1>SUBMISSIONS</h1>
+        <a href="admin.html" class="back-btn">Dashboard</a>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-card">
+            
+            <div class="card-header-text">
+                Archived Submissions
+                <span id="count-badge" class="record-count">0 Records</span>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Student Name</th>
+                            <th>Original Score</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="archive-body">
+                        <tr><td colspan="5" style="text-align:center; padding:30px; color:#666;">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyOY8tyJeGeiylQdVKBxS3dJrnFBHl39w",
+            authDomain: "aqlathon-main.firebaseapp.com",
+            projectId: "aqlathon-main",
+            storageBucket: "aqlathon-main.firebasestorage.app",
+            messagingSenderId: "556012566990",
+            appId: "1:556012566990:web:c897e1d2d9ec912dc7939f",
+            measurementId: "G-TK0F4M4QES"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Fetch Archives
+        window.onload = async () => {
+            const tbody = document.getElementById('archive-body');
+            const countBadge = document.getElementById('count-badge');
+            
+            try {
+                // Determine Total Questions for Score Display
+                const qSnap = await getDocs(collection(db, "questions"));
+                let totalMcq = 0;
+                let questionsCache = {};
+                qSnap.forEach(doc => {
+                    const data = doc.data();
+                    if(data.type === 'mcq') totalMcq++;
+                    questionsCache[doc.id] = data;
+                });
+
+                // Fetch Archive Collection
+                const archiveSnap = await getDocs(collection(db, "archived_submissions"));
+                
+                countBadge.textContent = `${archiveSnap.size} Records`;
+
+                if (archiveSnap.empty) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No archived submissions found.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = ''; // Clear loading
+                let index = 1;
+
+                archiveSnap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const id = docSnap.id;
+                    
+                    // Recalculate score for display
+                    let score = 0;
+                    if(data.answers) {
+                        Object.values(questionsCache).forEach(q => {
+                            if (q.type === 'mcq' && data.answers[q.id] === q.answer) score++;
+                        });
+                    }
+
+                    const row = `
+                        <tr id="row-${id}">
+                            <td style="color: var(--accent-cyan); font-weight: 500;">${index++}</td>
+                            <td style="font-weight:600; color:white;">${data.name || 'Unknown'}</td>
+                            <td>${score} / ${totalMcq}</td>
+                            <td><span class="status-badge status-archived">Archived</span></td>
+                            <td>
+                                <div class="action-flex">
+                                    <button class="icon-btn btn-restore" onclick="restoreSubmission('${id}')" title="Restore">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    </button>
+                                    <button class="icon-btn btn-delete" onclick="permanentDelete('${id}')" title="Delete Forever">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--accent-pink); padding: 30px;">Error loading data. Check Console.</td></tr>`;
+            }
+        };
+
+        // Restore: Moves document back to 'submissions' and removes from 'archived_submissions'
+        window.restoreSubmission = async (id) => {
+            if(!confirm("Restore this submission to the main list?")) return;
+
+            try {
+                const docRef = doc(db, "archived_submissions", id);
+                const docSnap = await getDoc(docRef);
+
+                if(docSnap.exists()) {
+                    const data = docSnap.data();
+                    // Move back to submissions
+                    await setDoc(doc(db, "submissions", id), data);
+                    // Delete from archive
+                    await deleteDoc(docRef);
+                    
+                    const row = document.getElementById(`row-${id}`);
+                    if(row) row.remove();
+                    
+                    // Update count
+                    const badge = document.getElementById('count-badge');
+                    const currentCount = parseInt(badge.textContent) || 0;
+                    badge.textContent = `${Math.max(0, currentCount - 1)} Records`;
+
+                    alert("Submission Restored!");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Error restoring submission");
+            }
+        };
+
+        // Permanent Delete
+        window.permanentDelete = async (id) => {
+            if(!confirm("WARNING: This will permanently delete this record. This action cannot be undone.")) return;
+
+            try {
+                await deleteDoc(doc(db, "archived_submissions", id));
+                const row = document.getElementById(`row-${id}`);
+                if(row) row.remove();
+
+                // Update count
+                const badge = document.getElementById('count-badge');
+                const currentCount = parseInt(badge.textContent) || 0;
+                badge.textContent = `${Math.max(0, currentCount - 1)} Records`;
+
+            } catch(e) {
+                console.error(e);
+                alert("Error deleting record");
+            }
+        };
+    </script>
+</body>
+</html> 
